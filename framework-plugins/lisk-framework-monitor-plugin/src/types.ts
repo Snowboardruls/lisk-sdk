@@ -50,7 +50,10 @@ export interface SharedState {
 		forkEventCount: number;
 		blockHeaders: Record<string, BlockHeader>;
 	};
-	transactions: Record<string, TransactionPropagationStats>;
+	transactions: {
+		transactions: Record<string, TransactionPropagationStats>;
+		movingAverage: number;
+	};
 	blocks: { [key: string]: BlockPropagationStats };
 }
 

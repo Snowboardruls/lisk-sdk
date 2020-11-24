@@ -12,7 +12,7 @@
  * Removal or modification of this copyright notice is prohibited.
  */
 import { Server } from 'http';
-import { RawBlock, RawBlockHeader } from '@liskhq/lisk-chain';
+import { RawBlock, RawBlockHeader, transactionSchema } from '@liskhq/lisk-chain';
 import { codec } from '@liskhq/lisk-codec';
 import { hash } from '@liskhq/lisk-cryptography';
 import { objects } from '@liskhq/lisk-utils';
@@ -36,6 +36,7 @@ import * as controllers from './controllers';
 
 // eslint-disable-next-line
 const pJSON = require('../package.json');
+const movingAverageSampleSize = 100000;
 
 interface Data {
 	readonly block: string;
@@ -96,7 +97,10 @@ export class MonitorPlugin extends BasePlugin {
 				forkEventCount: 0,
 				blockHeaders: {},
 			},
-			transactions: {},
+			transactions: {
+				transactions: {},
+				movingAverage: 0,
+			},
 			blocks: {},
 		};
 
@@ -169,10 +173,20 @@ export class MonitorPlugin extends BasePlugin {
 
 	private _handlePostTransactionAnnounce(data: { transactionIds: string[] }) {
 		for (const aTransactionId of data.transactionIds) {
-			if (this._state.transactions[aTransactionId]) {
-				this._state.transactions[aTransactionId].count += 1;
+			if (this._state.transactions.transactions[aTransactionId]) {
+				this._state.transactions.transactions[aTransactionId].count += 1;
+				if (!this._state.transactions.movingAverage) {
+					this._state.transactions.movingAverage = this._state.transactions.transactions[
+						aTransactionId
+					].count;
+				} else {
+					this._state.transactions.movingAverage -=
+						this._state.transactions.movingAverage / movingAverageSampleSize;
+					this._state.transactions.movingAverage +=
+						this._state.transactions.transactions[aTransactionId].count / movingAverageSampleSize;
+				}
 			} else {
-				this._state.transactions[aTransactionId] = {
+				this._state.transactions.transactions[aTransactionId] = {
 					count: 1,
 					timeReceived: Date.now(),
 				};
@@ -184,8 +198,13 @@ export class MonitorPlugin extends BasePlugin {
 	private _cleanUpTransactionStats() {
 		const expiryTime = 600000;
 		for (const transactionID of Object.keys(this._state.transactions)) {
-			if (Date.now() - this._state.transactions[transactionID].timeReceived > expiryTime) {
-				delete this._state.transactions[transactionID];
+			if (
+				Date.now() - this._state.transactions.transactions[transactionID].timeReceived >
+				expiryTime
+			) {
+				this._state.transactions.movingAverage -=
+					this._state.transactions.transactions[transactionID].count / movingAverageSampleSize;
+				delete this._state.transactions.transactions[transactionID];
 			}
 		}
 	}
