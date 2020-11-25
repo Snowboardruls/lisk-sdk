@@ -12,7 +12,7 @@
  * Removal or modification of this copyright notice is prohibited.
  */
 import { Server } from 'http';
-import { RawBlock, RawBlockHeader, transactionSchema } from '@liskhq/lisk-chain';
+import { RawBlock, RawBlockHeader } from '@liskhq/lisk-chain';
 import { codec } from '@liskhq/lisk-codec';
 import { hash } from '@liskhq/lisk-cryptography';
 import { objects } from '@liskhq/lisk-utils';
