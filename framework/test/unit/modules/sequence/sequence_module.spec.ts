@@ -68,11 +68,10 @@ describe('sequence module', () => {
 	stateStoreMock.account.set = jest.fn();
 
 	const reducerMock = { invoke: jest.fn() };
-	const getAddressFromPublicKeyMock = jest.fn().mockReturnValue(senderAddress);
 
 	beforeEach(() => {
 		sequenceModule = new SequenceModule(genesisConfig);
-		(cryptography as any).getAddressFromPublicKey = getAddressFromPublicKeyMock;
+		jest.spyOn(cryptography, 'getAddressFromPublicKey').mockReturnValue(senderAddress);
 	});
 
 	describe('incompatible nonce', () => {
